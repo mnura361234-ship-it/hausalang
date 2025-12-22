@@ -27,6 +27,17 @@ def execute(line, variables):
             print(float_val)
             return
         except Exception:
+            # try to evaluate as an expression using interpreter's parser (lazy import to avoid circular import)
+            try:
+                from core.interpreter import parse_literal
+
+                val = parse_literal(content, variables)
+                if val is not None:
+                    print(val)
+                    return
+            except Exception:
+                pass
+
             hus_err("kuskure: rubuta yana bukatar rubutu ko variable", "error: 'rubuta' needs a string or a variable")
             return
 

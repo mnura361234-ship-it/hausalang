@@ -9,6 +9,10 @@ examples = [
     ('examples/else.ha', 'Else (in ba haka ba)'),
     ('examples/comparisons.ha', 'Numeric comparisons'),
     ('examples/badvar.ha', 'Invalid variable name error'),
+    ('examples/arithmetic.ha', 'Arithmetic expressions'),
+    ('examples/comments.ha', 'Comments and inline expressions'),
+    ('examples/functions.ha', 'Functions and string concatenation'),
+    ('examples/elif_demo.ha', 'Elif (idan ... kuma)'),
 ]
 
 for filepath, desc in examples:
