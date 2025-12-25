@@ -92,7 +92,7 @@
 ### Scenario 1: User Says "This is broken!"
 ```
 Your response:
-"Thanks for reporting! Can you share the code that broke it? 
+"Thanks for reporting! Can you share the code that broke it?
 I'll fix it today and push an update."
 
 What you do:
@@ -120,7 +120,7 @@ What you do:
 ### Scenario 3: User Wants Something Out-of-Scope (e.g., "Make it a mobile app!")
 ```
 Your response:
-"Noted for future! Right now I'm focusing on the browser playground. 
+"Noted for future! Right now I'm focusing on the browser playground.
 If demand is high, we'll build mobile."
 
 What you do:

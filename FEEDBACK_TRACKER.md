@@ -107,7 +107,7 @@ Even if users ask for these, say "noted for v2":
 "[Feature] is broken!"
 
 Your response:
-"Thanks for reporting! I'll investigate and fix this today. 
+"Thanks for reporting! I'll investigate and fix this today.
 Can you share the code that broke it?"
 ```
 
@@ -134,7 +134,7 @@ Your response:
 "How do I [do something]?"
 
 Your response:
-"Great question! [Answer]. If you're confused, I should add a tutorial 
+"Great question! [Answer]. If you're confused, I should add a tutorial
 for this. Would that help?"
 (Use confusion as signal for tutorials needed)
 ```

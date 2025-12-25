@@ -21,7 +21,7 @@ Try it now: [YOUR_REPLIT_URL]
 
 ### Version 2 (Technical Angle)
 ```
-Built a Python interpreter for a Hausa-inspired programming language. 
+Built a Python interpreter for a Hausa-inspired programming language.
 
 Features variables, functions, conditionals, expressions, and more—all with Hausa keywords.
 

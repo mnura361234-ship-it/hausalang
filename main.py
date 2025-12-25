@@ -8,12 +8,11 @@ def main():
         return
 
     filename = sys.argv[1]
-    
-    
+
     if not filename.endswith(".ha"):
         print("Kuskure: Fayil dole ya kasance .ha")
-        return 
-    
+        return
+
     try:
         with open(filename, "r", encoding="utf-8") as f:
             code = f.read()

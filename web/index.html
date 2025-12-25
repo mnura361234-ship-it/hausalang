@@ -240,7 +240,7 @@
             try {
                 const response = await fetch('/api/examples');
                 const data = await response.json();
-                
+
                 data.examples.forEach(example => {
                     const btn = document.createElement('button');
                     btn.className = 'btn-example';
@@ -259,7 +259,7 @@
         // Run code
         async function runCode() {
             const code = codeEditor.value.trim();
-            
+
             if (!code) {
                 output.value = '(no code to run)';
                 return;

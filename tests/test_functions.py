@@ -3,7 +3,7 @@ from core.interpreter import run
 
 
 def test_functions_output():
-    with open('examples/functions.ha', 'r', encoding='utf-8') as f:
+    with open("examples/functions.ha", "r", encoding="utf-8") as f:
         code = f.read()
 
     buf = io.StringIO()
@@ -15,5 +15,5 @@ def test_functions_output():
         sys.stdout = old
 
     out = buf.getvalue()
-    assert 'Sannu Fatima' in out
-    assert '7' in out
+    assert "Sannu Fatima" in out
+    assert "7" in out

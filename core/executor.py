@@ -19,7 +19,7 @@ def execute(line, variables):
 
         # try to parse a number literal
         try:
-            if content.isdigit() or (content.startswith('-') and content[1:].isdigit()):
+            if content.isdigit() or (content.startswith("-") and content[1:].isdigit()):
                 print(int(content))
                 return
             # float
@@ -38,10 +38,15 @@ def execute(line, variables):
             except Exception:
                 pass
 
-            hus_err("kuskure: rubuta yana bukatar rubutu ko variable", "error: 'rubuta' needs a string or a variable")
+            hus_err(
+                "kuskure: rubuta yana bukatar rubutu ko variable",
+                "error: 'rubuta' needs a string or a variable",
+            )
             return
 
     # =============================
     # Unknown command
     # =============================
-    hus_err(f"kuskure: ban gane umarnin ba -> {line}", f"error: unknown command -> {line}")
+    hus_err(
+        f"kuskure: ban gane umarnin ba -> {line}", f"error: unknown command -> {line}"
+    )

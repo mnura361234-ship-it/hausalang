@@ -209,7 +209,7 @@ You DO have:
 
 ## The Most Important Thing
 
-**You've proven a core hypothesis: 
+**You've proven a core hypothesis:
 "A programming language in Hausa can exist and work."**
 
 Everything else is execution.
