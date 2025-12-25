@@ -195,11 +195,15 @@ def tokenize_program(code: str) -> List[Token]:
             if c.isdigit() or (c == "." and i + 1 < len(content) and content[i + 1].isdigit()):
                 j = i
                 dot_count = 0
-                while j < len(content) and (content[j].isdigit() or content[j] == "."):
-                    if content[j] == ".":
+                while j < len(content):
+                    if content[j].isdigit():
+                        pass
+                    elif content[j] == ".":
                         dot_count += 1
                         if dot_count > 1:
-                            break
+                            raise SyntaxError(f"Line {line_num}, Column {col}: Invalid number format")
+                    else:
+                        break
                     j += 1
                 number_value = content[i:j]
                 tokens.append(Token("NUMBER", number_value, line_num, col))
@@ -321,3 +325,4 @@ in ba haka ba:
             print(f"  {tok}")
     except SyntaxError as e:
         print(f"  Error: {e}")
+
