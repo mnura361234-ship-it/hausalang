@@ -318,6 +318,44 @@ class ContextualError(Exception):
         error_id: UUID or deterministic hash for tracking
     """
 
+    # Cache for dynamically-created subclasses keyed by base exception name
+    _DYN_SUBCLASS_CACHE: Dict[str, type] = {}
+
+    def __new__(cls, *args, kind: ErrorKind = None, **kwargs):
+        """
+        Create an instance of a dynamic subclass that also inherits from the
+        appropriate builtin exception (e.g., SyntaxError, NameError).
+
+        We create a small dynamic subclass on first use per builtin base and
+        cache it to preserve identity and picklability where possible.
+        """
+        # On subclass usage, no dynamic dispatch necessary
+        if cls is not ContextualError:
+            return super().__new__(cls)
+
+        # Determine kind either from keyword or positional args (old signature)
+        actual_kind = kind
+        if actual_kind is None and len(args) >= 1 and isinstance(args[0], ErrorKind):
+            actual_kind = args[0]
+
+        base_exc = (
+            _determine_error_base_class(actual_kind) if actual_kind else RuntimeError
+        )
+
+        cache_key = base_exc.__name__
+        Dyn = ContextualError._DYN_SUBCLASS_CACHE.get(cache_key)
+        if Dyn is None:
+            # Create dynamic subclass that preserves ContextualError.__init__ by
+            # placing ContextualError first in the MRO, and also inherits from
+            # the builtin base so isinstance(..., base_exc) is True.
+            Dyn = type(f"ContextualError_{cache_key}", (ContextualError, base_exc), {})
+            ContextualError._DYN_SUBCLASS_CACHE[cache_key] = Dyn
+
+        # Allocate instance of dynamic class using Dyn.__new__ which will
+        # delegate to the correct base __new__ implementation as needed.
+        instance = Dyn.__new__(Dyn)
+        return instance
+
     def __init__(
         self,
         kind: ErrorKind,
