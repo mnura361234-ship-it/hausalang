@@ -264,7 +264,7 @@ def _determine_error_base_class(kind: ErrorKind) -> type:
     This ensures backward compatibility with existing error handlers:
     - Lexical/Parse errors → inherit from SyntaxError
     - Name errors → inherit from NameError
-    - Value/Type errors → inherit from ValueError/TypeError
+    - Value/Type errors → inherit from ValueError/TypeError/ZeroDivisionError
     - Others → inherit from RuntimeError
 
     Args:
@@ -279,6 +279,8 @@ def _determine_error_base_class(kind: ErrorKind) -> type:
         return SyntaxError
     elif kind_str.startswith("runtime/name/"):
         return NameError
+    elif kind_str == "runtime/value/division_by_zero":
+        return ZeroDivisionError
     elif kind_str.startswith("runtime/value/"):
         return ValueError
     elif kind_str.startswith("runtime/type/"):
