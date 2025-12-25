@@ -1,4 +1,3 @@
-import re
 from typing import List, Optional, NamedTuple
 
 
@@ -23,12 +22,16 @@ class Token(NamedTuple):
 KEYWORDS = {
     "idan": "KEYWORD_IF",
     "in": "KEYWORD_ELSE",  # 'in ba haka ba' is 3 tokens
-    "ba": "KEYWORD_ELSE",
+    "ba": "KEYWORD_ELSE",  # Note: also used for "ba" in for loops
     "haka": "KEYWORD_ELSE",
     "aiki": "KEYWORD_FUNCTION",
     "mayar": "KEYWORD_RETURN",
     "rubuta": "KEYWORD_PRINT",
     "kuma": "KEYWORD_ELIF",
+    "kadai": "KEYWORD_WHILE",
+    "don": "KEYWORD_FOR",  # for keyword
+    "zuwa": "KEYWORD_TO",  # ascending to
+    "ta": "KEYWORD_STEP",  # step
 }
 
 
@@ -47,7 +50,6 @@ def strip_comments(s: str) -> str:
         if before.count('"') % 2 == 0:
             return s[:idx].rstrip()
         i = idx + 1
-
 
 
 def tokenize_expr(expr: str) -> Optional[List[str]]:
@@ -192,7 +194,9 @@ def tokenize_program(code: str) -> List[Token]:
                 continue
 
             # Numbers (integers and floats)
-            if c.isdigit() or (c == "." and i + 1 < len(content) and content[i + 1].isdigit()):
+            if c.isdigit() or (
+                c == "." and i + 1 < len(content) and content[i + 1].isdigit()
+            ):
                 j = i
                 dot_count = 0
                 while j < len(content):
@@ -201,7 +205,9 @@ def tokenize_program(code: str) -> List[Token]:
                     elif content[j] == ".":
                         dot_count += 1
                         if dot_count > 1:
-                            raise SyntaxError(f"Line {line_num}, Column {col}: Invalid number format")
+                            raise SyntaxError(
+                                f"Line {line_num}, Column {col}: Invalid number format"
+                            )
                     else:
                         break
                     j += 1
@@ -239,7 +245,7 @@ def tokenize_program(code: str) -> List[Token]:
                     continue
 
             # Single-character operators and punctuation
-            if c in "=+-*/:()<>":
+            if c in "=+-*/:()<>,":
                 tokens.append(Token("OPERATOR", c, line_num, col))
                 col += 1
                 i += 1
@@ -325,4 +331,3 @@ in ba haka ba:
             print(f"  {tok}")
     except SyntaxError as e:
         print(f"  Error: {e}")
-

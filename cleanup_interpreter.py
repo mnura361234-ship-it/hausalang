@@ -1,4 +1,7 @@
-"""
+#!/usr/bin/env python3
+"""Clean interpreter.py - keep only the new AST-based content"""
+
+new_content = '''"""
 AST Interpreter for Hausalang
 
 This module implements an interpreter that walks the Abstract Syntax Tree (AST)
@@ -10,7 +13,7 @@ Key Design:
 - No raw token or line-based execution; pure AST-driven
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from core import parser
 from core.lexer import tokenize_program
@@ -22,7 +25,6 @@ class ReturnValue(Exception):
     When a return statement is executed, we raise this exception to unwind
     the call stack back to the function call site.
     """
-
     def __init__(self, value: Any):
         self.value = value
         super().__init__()
@@ -36,7 +38,7 @@ class Environment:
     we create a new Environment with a parent reference.
     """
 
-    def __init__(self, parent: Optional["Environment"] = None):
+    def __init__(self, parent: Optional['Environment'] = None):
         """Initialize an environment.
 
         Args:
@@ -136,12 +138,6 @@ class Interpreter:
         elif isinstance(stmt, parser.If):
             self.execute_if(stmt, env)
 
-        elif isinstance(stmt, parser.While):
-            self.execute_while(stmt, env)
-
-        elif isinstance(stmt, parser.For):
-            self.execute_for(stmt, env)
-
         elif isinstance(stmt, parser.Function):
             self.execute_function_def(stmt, env)
 
@@ -175,7 +171,7 @@ class Interpreter:
             env: The environment for execution.
         """
         value = self.eval_expression(stmt.expression, env)
-        print(value, end="")
+        print(value, end='')
 
     def execute_return(self, stmt: parser.Return, env: Environment) -> None:
         """Execute a return statement.
@@ -211,95 +207,6 @@ class Interpreter:
             # Execute else-body (if it exists)
             for else_stmt in stmt.else_body:
                 self.execute_statement(else_stmt, env)
-
-    def execute_while(self, stmt: parser.While, env: Environment) -> None:
-        """Execute a while loop.
-
-        Re-evaluates the condition before each iteration. Executes the body
-        as long as the condition remains truthy.
-
-        Args:
-            stmt: The While statement.
-            env: The environment for execution.
-        """
-        while self.is_truthy(self.eval_expression(stmt.condition, env)):
-            # Execute loop body
-            for body_stmt in stmt.body:
-                self.execute_statement(body_stmt, env)
-
-    def execute_for(self, stmt: parser.For, env: Environment) -> None:
-        """Execute a for loop via AST rewriting to assignment + while loop.
-
-        For loops are internally converted to:
-            1. Assignment: var = start
-            2. While loop with:
-               - Condition: var < end (ascending) or var > end (descending)
-               - Body: original statements + increment/decrement
-
-        This approach reuses the proven while loop implementation.
-
-        Args:
-            stmt: The For statement.
-            env: The environment for execution.
-
-        Raises:
-            ValueError: If step is 0 or has invalid type.
-            TypeError: If expressions don't evaluate to numbers.
-        """
-        # Step 1: Evaluate all for-loop expressions to values
-        start_value = self.eval_expression(stmt.start, env)
-        end_value = self.eval_expression(stmt.end, env)
-
-        # Evaluate step (default to 1)
-        step_value = 1
-        if stmt.step is not None:
-            step_value = self.eval_expression(stmt.step, env)
-
-        # Validate step value
-        if step_value == 0:
-            raise ValueError("For loop step cannot be zero")
-        if not isinstance(step_value, (int, float)):
-            raise TypeError(f"For loop step must be numeric, got {type(step_value)}")
-
-        # Step 2: Initialize loop variable directly
-        env.define_variable(stmt.var, start_value)
-
-        # Step 3: Determine direction and create condition + increment
-        if stmt.direction == "ascending":
-            # Validate step is positive for ascending
-            if step_value < 0:
-                raise ValueError(
-                    f"For loop: ascending (zuwa) direction requires positive step, "
-                    f"got {step_value}"
-                )
-
-            # Execute loop: while var < end
-            while self.is_truthy(env.get_variable(stmt.var) < end_value):
-                # Execute original body
-                for body_stmt in stmt.body:
-                    self.execute_statement(body_stmt, env)
-
-                # Increment: var = var + step
-                current = env.get_variable(stmt.var)
-                env.define_variable(stmt.var, current + step_value)
-
-        else:  # descending
-            # Validate step is positive for descending (we negate it)
-            if step_value < 0:
-                raise ValueError(
-                    f"For loop: descending (ba) direction requires positive step, "
-                    f"got {step_value}"
-                )
-
-            # Execute loop: while var > end
-            while self.is_truthy(env.get_variable(stmt.var) > end_value):
-                # Execute original body
-                for body_stmt in stmt.body:
-                    self.execute_statement(body_stmt, env)
-
-                # Decrement: var = var - step
-                current = env.get_variable(stmt.var)
-                env.define_variable(stmt.var, current - step_value)
 
     def execute_function_def(self, stmt: parser.Function, env: Environment) -> None:
         """Execute a function definition.
@@ -461,7 +368,6 @@ class Interpreter:
 # Public API
 # ============================================================================
 
-
 def interpret_program(source_code: str) -> None:
     """Parse and interpret a Hausalang program.
 
@@ -486,3 +392,9 @@ def interpret_program(source_code: str) -> None:
     # Interpret the AST
     interpreter = Interpreter()
     interpreter.interpret(program)
+'''
+
+with open("core/interpreter.py", "w") as f:
+    f.write(new_content)
+
+print("✅ Cleaned interpreter.py")
