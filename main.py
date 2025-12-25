@@ -1,5 +1,5 @@
 import sys
-from core.interpreter import run
+from core.interpreter import interpret_program
 
 
 def main():
@@ -16,7 +16,7 @@ def main():
     try:
         with open(filename, "r", encoding="utf-8") as f:
             code = f.read()
-            run(code)
+            interpret_program(code)
     except FileNotFoundError:
         print("Kuskure: Ba a samu fayil ba")
         return
