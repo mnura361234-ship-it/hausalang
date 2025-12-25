@@ -1,18 +1,22 @@
-from core.executor import execute
-from core.lexer import tokenize_expr, strip_comments
 import re
 from copy import deepcopy
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+from core.executor import execute
+from core.lexer import strip_comments
 
 
-def hus_err(ha, en):
+def hus_err(ha: str, en: str) -> None:
+    """Print a bilingual error message."""
     print(f"{ha} ({en})")
 
 
-def is_valid_name(name):
+def is_valid_name(name: str) -> bool:
+    """Check if a name is a valid variable identifier."""
     return re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", name) is not None
 
 
-def parse_literal(token, variables):
+def parse_literal(token: str, variables: Dict[str, Any]) -> Any:
     s = token.strip()
 
     # string literal
@@ -168,7 +172,8 @@ def parse_literal(token, variables):
     return eval_postfix(postfix)
 
 
-def compare_values(left, op, right):
+def compare_values(left: Any, op: str, right: Any) -> bool:
+    """Compare two values using the specified operator."""
     try:
         if op == "==":
             return left == right
@@ -187,16 +192,17 @@ def compare_values(left, op, right):
     return False
 
 
-def run(code):
+def run(code: str) -> None:
+    """Execute Hausalang code."""
     lines = code.splitlines()
-    variables = {}
-    functions = {}
+    variables: Dict[str, Any] = {}
+    functions: Dict[str, Dict[str, Any]] = {}
 
     # support nested blocks using a stack of dicts: {base_indent, condition, else_mode}
-    blocks = []
+    blocks: List[Dict[str, Any]] = []
 
-    def run_block(block_lines, local_vars):
-        # execute a list of lines in isolated local_vars; supports 'mayar' for return
+    def run_block(block_lines: List[str], local_vars: Dict[str, Any]) -> Tuple[Any, bool]:
+        """Execute a list of lines in isolated local_vars; supports 'mayar' for return."""
         i = 0
         while i < len(block_lines):
             raw = block_lines[i].rstrip("\n\r")

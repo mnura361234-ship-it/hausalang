@@ -143,6 +143,38 @@ python web_server.py
 ```
 Then visit: **http://localhost:8000/static/**
 
+## Developer Setup
+
+### Install development dependencies:
+```bash
+pip install -r dev-requirements.txt
+```
+
+### Set up pre-commit hooks (optional but recommended):
+```bash
+pre-commit install
+pre-commit run --all-files  # Run checks once
+```
+
+### Format and lint code:
+```bash
+black .                      # Format with Black
+ruff check . --fix          # Lint and auto-fix with Ruff
+mypy core/                  # Type check core modules
+```
+
+### Run tests with coverage:
+```bash
+coverage run -m pytest
+coverage report
+```
+
+### Build and run with Docker (optional):
+```bash
+docker-compose up
+```
+Then visit: **http://localhost:8000/static/**
+
 ## Deployment
 
 ### Deploy to Replit (Free, Recommended)
