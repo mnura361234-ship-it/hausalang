@@ -6,8 +6,6 @@ from core.interpreter import run
 import io
 import sys
 import signal
-from contextlib import contextmanager
-import threading
 
 
 class CodeRequest(BaseModel):

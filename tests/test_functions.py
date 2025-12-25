@@ -1,5 +1,6 @@
-import io, sys
-from core.interpreter import run
+import io
+import sys
+from hausalang.core.interpreter import run
 
 
 def test_functions_output():

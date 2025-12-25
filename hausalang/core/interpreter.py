@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
-"""Clean interpreter.py - keep only the new AST-based content"""
-
-new_content = '''"""
+"""
 AST Interpreter for Hausalang
 
 This module implements an interpreter that walks the Abstract Syntax Tree (AST)
@@ -13,10 +10,15 @@ Key Design:
 - No raw token or line-based execution; pure AST-driven
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
-from hausalang.core import parser
-from hausalang.core.lexer import tokenize_program
+from . import parser
+from .lexer import tokenize_program
+from .errors import (
+    ContextualError,
+    ErrorKind,
+    SourceLocation,
+)
 
 
 class ReturnValue(Exception):
@@ -25,6 +27,7 @@ class ReturnValue(Exception):
     When a return statement is executed, we raise this exception to unwind
     the call stack back to the function call site.
     """
+
     def __init__(self, value: Any):
         self.value = value
         super().__init__()
@@ -38,7 +41,7 @@ class Environment:
     we create a new Environment with a parent reference.
     """
 
-    def __init__(self, parent: Optional['Environment'] = None):
+    def __init__(self, parent: Optional["Environment"] = None):
         """Initialize an environment.
 
         Args:
@@ -138,6 +141,12 @@ class Interpreter:
         elif isinstance(stmt, parser.If):
             self.execute_if(stmt, env)
 
+        elif isinstance(stmt, parser.While):
+            self.execute_while(stmt, env)
+
+        elif isinstance(stmt, parser.For):
+            self.execute_for(stmt, env)
+
         elif isinstance(stmt, parser.Function):
             self.execute_function_def(stmt, env)
 
@@ -171,7 +180,7 @@ class Interpreter:
             env: The environment for execution.
         """
         value = self.eval_expression(stmt.expression, env)
-        print(value, end='')
+        print(value, end="")
 
     def execute_return(self, stmt: parser.Return, env: Environment) -> None:
         """Execute a return statement.
@@ -208,6 +217,95 @@ class Interpreter:
             for else_stmt in stmt.else_body:
                 self.execute_statement(else_stmt, env)
 
+    def execute_while(self, stmt: parser.While, env: Environment) -> None:
+        """Execute a while loop.
+
+        Re-evaluates the condition before each iteration. Executes the body
+        as long as the condition remains truthy.
+
+        Args:
+            stmt: The While statement.
+            env: The environment for execution.
+        """
+        while self.is_truthy(self.eval_expression(stmt.condition, env)):
+            # Execute loop body
+            for body_stmt in stmt.body:
+                self.execute_statement(body_stmt, env)
+
+    def execute_for(self, stmt: parser.For, env: Environment) -> None:
+        """Execute a for loop via AST rewriting to assignment + while loop.
+
+        For loops are internally converted to:
+            1. Assignment: var = start
+            2. While loop with:
+               - Condition: var < end (ascending) or var > end (descending)
+               - Body: original statements + increment/decrement
+
+        This approach reuses the proven while loop implementation.
+
+        Args:
+            stmt: The For statement.
+            env: The environment for execution.
+
+        Raises:
+            ValueError: If step is 0 or has invalid type.
+            TypeError: If expressions don't evaluate to numbers.
+        """
+        # Step 1: Evaluate all for-loop expressions to values
+        start_value = self.eval_expression(stmt.start, env)
+        end_value = self.eval_expression(stmt.end, env)
+
+        # Evaluate step (default to 1)
+        step_value = 1
+        if stmt.step is not None:
+            step_value = self.eval_expression(stmt.step, env)
+
+        # Validate step value
+        if step_value == 0:
+            raise ValueError("For loop step cannot be zero")
+        if not isinstance(step_value, (int, float)):
+            raise TypeError(f"For loop step must be numeric, got {type(step_value)}")
+
+        # Step 2: Initialize loop variable directly
+        env.define_variable(stmt.var, start_value)
+
+        # Step 3: Determine direction and create condition + increment
+        if stmt.direction == "ascending":
+            # Validate step is positive for ascending
+            if step_value < 0:
+                raise ValueError(
+                    f"For loop: ascending (zuwa) direction requires positive step, "
+                    f"got {step_value}"
+                )
+
+            # Execute loop: while var < end
+            while self.is_truthy(env.get_variable(stmt.var) < end_value):
+                # Execute original body
+                for body_stmt in stmt.body:
+                    self.execute_statement(body_stmt, env)
+
+                # Increment: var = var + step
+                current = env.get_variable(stmt.var)
+                env.define_variable(stmt.var, current + step_value)
+
+        else:  # descending
+            # Validate step is positive for descending (we negate it)
+            if step_value < 0:
+                raise ValueError(
+                    f"For loop: descending (ba) direction requires positive step, "
+                    f"got {step_value}"
+                )
+
+            # Execute loop: while var > end
+            while self.is_truthy(env.get_variable(stmt.var) > end_value):
+                # Execute original body
+                for body_stmt in stmt.body:
+                    self.execute_statement(body_stmt, env)
+
+                # Decrement: var = var - step
+                current = env.get_variable(stmt.var)
+                env.define_variable(stmt.var, current - step_value)
+
     def execute_function_def(self, stmt: parser.Function, env: Environment) -> None:
         """Execute a function definition.
 
@@ -239,11 +337,17 @@ class Interpreter:
         elif isinstance(expr, parser.String):
             return expr.value
 
+        elif isinstance(expr, parser.NoneValue):
+            return None
+
         elif isinstance(expr, parser.Identifier):
             return env.get_variable(expr.name)
 
         elif isinstance(expr, parser.BinaryOp):
             return self.eval_binary_op(expr, env)
+
+        elif isinstance(expr, parser.UnaryOp):
+            return self.eval_unary_op(expr, env)
 
         elif isinstance(expr, parser.FunctionCall):
             return self.eval_function_call(expr, env)
@@ -279,6 +383,9 @@ class Interpreter:
                 return left // right
             return left / right
 
+        elif op == "%":
+            return left % right
+
         # Comparison operators
         elif op == "==":
             return left == right
@@ -295,6 +402,25 @@ class Interpreter:
 
         else:
             raise RuntimeError(f"Unknown operator: {op}")
+
+    def eval_unary_op(self, expr: parser.UnaryOp, env: Environment) -> Any:
+        """Evaluate a unary operation.
+
+        Args:
+            expr: The UnaryOp expression.
+            env: The environment for execution.
+
+        Returns:
+            The result of the operation.
+        """
+        operand = self.eval_expression(expr.operand, env)
+
+        if expr.operator == "-":
+            return -operand
+        elif expr.operator == "+":
+            return +operand
+        else:
+            raise RuntimeError(f"Unknown unary operator: {expr.operator}")
 
     def eval_function_call(self, expr: parser.FunctionCall, env: Environment) -> Any:
         """Evaluate a function call.
@@ -368,33 +494,172 @@ class Interpreter:
 # Public API
 # ============================================================================
 
+
+# ============================================================================
+# Public API
+# ============================================================================
+
+
+def _wrap_runtime_error(
+    exc: Exception,
+    ast_node: Optional[parser.ASTNode] = None,
+) -> ContextualError:
+    """Wrap a runtime exception in ContextualError.
+
+    Maps Python exceptions to ErrorKind and adds diagnostic context.
+    Location extracted from AST node if available.
+
+    Args:
+        exc: The exception to wrap
+        ast_node: Optional AST node where error occurred (for location)
+
+    Returns:
+        ContextualError with mapped kind, location, and context
+    """
+    # Determine location from AST node
+    location = SourceLocation(
+        file_path="<input>",  # Will be resolved in main.py
+        line=ast_node.line if ast_node else 1,
+        column=ast_node.column if ast_node else 0,
+    )
+
+    # Determine ErrorKind, context, and help from exception
+    kind, context_frames, help_text = _infer_runtime_error_kind(exc)
+
+    # Create ContextualError with preserved source exception
+    error = ContextualError(
+        kind=kind,
+        message=str(exc),
+        location=location,
+        source=exc,  # Preserve for traceback chaining
+        context_frames=context_frames,
+        tags={"runtime"},
+        help=help_text,
+    )
+    return error
+
+
+def _infer_runtime_error_kind(exc: Exception) -> tuple:
+    """Infer ErrorKind, context frames, and help text from exception.
+
+    Maps Python exception types and messages to appropriate ErrorKind values.
+    Builds context frames with diagnostic information.
+
+    Args:
+        exc: The exception to categorize
+
+    Returns:
+        Tuple of (ErrorKind, List[ContextFrame], Optional[help_text])
+    """
+    exc_str = str(exc).lower()
+    context_frames = []
+    help_text = None
+
+    # NameError: Undefined variable or function
+    if isinstance(exc, NameError):
+        if "variable" in exc_str:
+            kind = ErrorKind.UNDEFINED_VARIABLE
+            help_text = "Assign a value before using the variable"
+        else:
+            kind = ErrorKind.UNDEFINED_FUNCTION
+            help_text = "Define the function with 'aiki' before calling it"
+
+    # ZeroDivisionError: Division by zero (before ValueError since it's more specific)
+    elif isinstance(exc, ZeroDivisionError):
+        kind = ErrorKind.DIVISION_BY_ZERO
+        help_text = "Check that divisor is not zero"
+
+    # ValueError: Various runtime value errors
+    elif isinstance(exc, ValueError):
+        if "step" in exc_str and "zero" in exc_str:
+            kind = ErrorKind.ZERO_LOOP_STEP
+            help_text = "Use a non-zero step value (e.g., 'ta 1')"
+        elif "step" in exc_str and "positive" in exc_str:
+            kind = ErrorKind.NEGATIVE_LOOP_STEP
+            help_text = (
+                "Ascending loops need positive step, descending need positive too"
+            )
+        elif "argument" in exc_str or "function" in exc_str:
+            kind = ErrorKind.WRONG_ARGUMENT_COUNT
+            help_text = "Check function definition for expected argument count"
+        else:
+            kind = ErrorKind.EMPTY_REQUIRED_VALUE
+            help_text = None
+
+    # TypeError: Type mismatches in operations
+    elif isinstance(exc, TypeError):
+        kind = ErrorKind.INVALID_OPERAND_TYPE
+        help_text = "Ensure variable types match the operation (strings vs. numbers)"
+
+    # RuntimeError: Unknown operators or statements
+    elif isinstance(exc, RuntimeError):
+        if "operator" in exc_str:
+            kind = ErrorKind.UNKNOWN_OPERATOR
+            help_text = "Check the operator syntax"
+        elif "statement" in exc_str:
+            kind = ErrorKind.UNKNOWN_STATEMENT_TYPE
+            help_text = "Check statement syntax"
+        else:
+            kind = ErrorKind.INTERPRETER_BUG
+            help_text = None
+
+    # Fallback for unexpected exception types
+    else:
+        kind = ErrorKind.INTERPRETER_BUG
+        help_text = f"Unexpected error: {type(exc).__name__}"
+
+    return kind, context_frames, help_text
+
+
 def interpret_program(source_code: str) -> None:
     """Parse and interpret a Hausalang program.
 
     This is the main entry point: takes source code, lexes it, parses it to
     produce an AST, then interprets the AST.
 
+    All errors (lexical, parse, runtime) are wrapped in ContextualError for
+    enhanced error reporting. ContextualError inherits from stdlib exceptions
+    for backward compatibility.
+
     Args:
         source_code: The Hausalang source code as a string.
 
     Raises:
-        SyntaxError: If the code has a syntax error.
-        NameError: If a variable or function is undefined.
-        ValueError: If a function is called with wrong number of arguments.
-        RuntimeError: For other runtime errors.
+        ContextualError: If the code has any error (inherits from SyntaxError,
+                        NameError, ValueError, etc. depending on error type)
     """
-    # Lex the source code
-    tokens = tokenize_program(source_code)
+    try:
+        # Lex the source code
+        tokens = tokenize_program(source_code)
 
-    # Parse tokens to produce AST
-    program = parser.parse(tokens)
+        # Parse tokens to produce AST
+        program = parser.parse(tokens)
 
-    # Interpret the AST
-    interpreter = Interpreter()
-    interpreter.interpret(program)
-'''
+        # Interpret the AST
+        interpreter = Interpreter()
+        interpreter.interpret(program)
 
-with open("core/interpreter.py", "w") as f:
-    f.write(new_content)
+    except ContextualError:
+        # Already wrapped by lexer or parser - re-raise as-is
+        raise
 
-print("✅ Cleaned interpreter.py")
+    except (NameError, ValueError, TypeError, RuntimeError, ZeroDivisionError) as e:
+        # Wrap runtime errors in ContextualError
+        wrapped = _wrap_runtime_error(e, ast_node=None)
+        raise wrapped from e
+
+    except Exception as e:
+        # Unexpected error type - wrap in internal error
+        wrapped = ContextualError(
+            kind=ErrorKind.INTERPRETER_BUG,
+            message=f"Unexpected error in interpreter: {str(e)}",
+            location=SourceLocation("<input>", 1, 0),
+            source=e,
+            tags={"internal", "interpreter"},
+        )
+        raise wrapped from e
+
+
+# Backwards compatibility: older tests expect `run` to be available.
+# Provide an alias so external code importing `run` continues to work.
+run = interpret_program

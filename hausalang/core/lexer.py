@@ -1,6 +1,6 @@
 from typing import List, Optional, NamedTuple
 
-from core.errors import ContextualError, ErrorKind, SourceLocation
+from .errors import ContextualError, ErrorKind, SourceLocation
 
 
 # ============================================================================
@@ -145,7 +145,7 @@ def tokenize_program(code: str) -> List[Token]:
     - Identifiers: variable and function names
     - Strings: quoted with double quotes
     - Numbers: integers and floats
-    - Operators: =, ==, !=, >, <, >=, <=, +, -, *, /, :
+    - Operators: =, ==, !=, >, <, >=, <=, +, -, *, /, %, :
     - Indentation: INDENT/DEDENT tokens
     - Newlines and comments (stripped)
     - Parentheses: ( )
@@ -291,7 +291,7 @@ def tokenize_program(code: str) -> List[Token]:
                     continue
 
             # Single-character operators and punctuation
-            if c in "=+-*/:()<>,":
+            if c in "=+-*/%:()<>,":
                 tokens.append(Token("OPERATOR", c, line_num, col))
                 col += 1
                 i += 1

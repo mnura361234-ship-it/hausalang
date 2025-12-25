@@ -14,8 +14,8 @@ Key Design Principles:
 from typing import List, Optional, Union
 from dataclasses import dataclass
 
-from core.lexer import Token
-from core.errors import (
+from .lexer import Token
+from .errors import (
     ContextualError,
     ErrorKind,
     SourceLocation,
@@ -1005,20 +1005,21 @@ class Parser:
         return left
 
     def parse_multiplicative(self) -> Expression:
-        """Parse multiplication and division.
+        """Parse multiplication, division, and modulo.
 
         Grammar:
-            multiplicative = unary ((*|/) unary)*
+            multiplicative = unary ((*|/|%) unary)*
 
         Example:
             x * 2
             a / b * c
+            x % 2
         """
         left = self.parse_unary()
 
         while self.match("OPERATOR"):
             op_token = self.peek()
-            if op_token.value in ("*", "/"):
+            if op_token.value in ("*", "/", "%"):
                 op = op_token.value
                 self.advance()
                 right = self.parse_unary()

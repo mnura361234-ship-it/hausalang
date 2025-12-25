@@ -57,7 +57,7 @@ Status: New
 
 ## Quick Stats to Collect
 
-- [ ] Total playground visits (from Replit analytics)
+- [ ] Total playground visits (from hausalang.repl.it analytics)
 - [ ] Example most clicked
 - [ ] Code executed most often
 - [ ] Most common error

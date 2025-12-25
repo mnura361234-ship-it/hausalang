@@ -84,7 +84,7 @@
 
 ## Monthly Review (Every 30 Days)
 
-- [ ] Count total users (from Replit analytics)
+- [ ] Count total users (from hausalang.repl.it analytics)
 - [ ] Count code executions
 - [ ] Review feedback entries
 - [ ] Identify #1 bug (fix it)

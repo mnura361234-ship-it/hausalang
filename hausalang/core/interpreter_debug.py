@@ -1,4 +1,4 @@
-from core.executor import execute
+from .executor import execute
 import re
 
 
