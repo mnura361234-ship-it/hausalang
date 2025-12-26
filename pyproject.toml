@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hausalang"
-version = "1.1.0"
+version = "1.1.1"
 description = "Hausalang: A Hausa-based educational programming language with structured error reporting"
 readme = "README.md"
 requires-python = ">=3.9"
