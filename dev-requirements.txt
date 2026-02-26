@@ -1,5 +1,5 @@
 black==24.1.0
-ruff==0.4.4
+ruff==0.15.2
 mypy==1.9.0
 pre-commit==3.4.0
 pytest
